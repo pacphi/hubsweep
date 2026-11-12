@@ -10,6 +10,8 @@ pack per campaign, so it keeps working when the next one comes along.
 - **No dependencies.** Node 22+ and the GitHub CLI (`gh`). Windows, macOS and Linux, tested on all three.
 - **A Claude skill included**, for Claude Code and Claude chat.
 
+**New to supply-chain attacks?** Start with the explainer at **[pacphi.github.io/hubsweep](https://pacphi.github.io/hubsweep/)**: what happened, why it matters in the AI era, a message for each role, and *Breach Sweep*, a small game that teaches you the signs.
+
 Ships with packs for **wfx-loot** (November 2026) and **GhostAction** (October 2026).
 
 ## How this started
