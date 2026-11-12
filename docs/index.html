@@ -195,6 +195,7 @@ section.band { padding-block: 64px; border-top: 1px solid var(--line); }
 .cmds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .cmd { background: var(--panel); border: 1px solid var(--line); padding: 18px; display: grid; gap: 10px; align-content: start; }
 .cmd p { color: var(--dim); font-size: .92rem; }
+.cmd.wide { grid-column: 1 / -1; }
 .code { display: flex; align-items: stretch; background: #000; border: 1px solid var(--line); }
 .code code { flex: 1; min-width: 0; padding: 10px 12px; color: var(--amber); font-size: .82rem; overflow-x: auto; white-space: pre; }
 .code button { font: 500 .7rem/1 var(--mono); background: var(--well); color: var(--dim); border: 0; border-left: 1px solid var(--line); padding: 0 12px; cursor: pointer; }
@@ -483,9 +484,15 @@ What hubsweep will do:
           <div class="code"><code>npx --yes github:pacphi/hubsweep --local ~/code</code><button type="button" data-copy>Copy</button></div>
         </div>
         <div class="cmd">
-          <h3>Ask Claude</h3>
-          <p>In Claude Code, add the plugin, then ask "Have my repos been hit by wfx-loot?" Claude checks your setup, explains each step and asks before it starts. For Claude chat, upload the skill zip from the latest release.</p>
+          <h3>Ask Claude Code</h3>
+          <p>Add the plugin, then ask "Have my repos been hit by wfx-loot?" Claude checks your setup, explains each step and asks before it starts.</p>
           <div class="code"><code>/plugin marketplace add pacphi/hubsweep</code><button type="button" data-copy>Copy</button></div>
+          <div class="code"><code>/plugin install hubsweep@hubsweep</code><button type="button" data-copy>Copy</button></div>
+        </div>
+        <div class="cmd wide">
+          <h3>Ask Claude chat</h3>
+          <p>Download the skill, then in Claude open <b>Settings → Capabilities → Skills</b> and upload the zip. Ask the same question. Claude uses your GitHub connector to look, or hands you the commands to run yourself. The link always fetches the newest release.</p>
+          <div class="cta"><a class="btn solid" href="https://github.com/pacphi/hubsweep/releases/latest/download/hubsweep-skill.zip">Download hubsweep-skill.zip</a><a class="btn" href="https://github.com/pacphi/hubsweep/releases/latest">Release notes</a></div>
         </div>
       </div>
       <p class="fineprint">If it finds something: lock your account first (sessions, tokens, SSH keys, authorised apps), then rotate every secret and cloud role the affected workflows could reach, then clean up. Keep a copy of what you found before deleting anything.</p>

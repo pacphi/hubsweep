@@ -161,7 +161,7 @@ missing, agrees the scope with you, runs the sweep and explains the result. hubs
 
 **Claude chat (claude.ai)**
 
-Download `hubsweep-skill.zip` from the [latest release](https://github.com/pacphi/hubsweep/releases/latest), then
+Download [`hubsweep-skill.zip`](https://github.com/pacphi/hubsweep/releases/latest/download/hubsweep-skill.zip) (always the newest release), then
 upload it under **Settings → Capabilities → Skills**. Chat can't run commands on your computer, so there the skill
 uses the GitHub connector (if you've connected it) for the quick checks, gives you the commands for the full sweep,
 and reads the report with you when you upload it.
