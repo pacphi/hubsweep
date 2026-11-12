@@ -1,0 +1,9 @@
+# hubsweep holds the indicators it looks for, on purpose: in its rule packs, tests, docs and skill.
+# Without this file, sweeping a folder that contains a clone of hubsweep would flag hubsweep itself.
+# Only file-path and file-content matches are skipped, and every skip is listed in the report.
+rules/
+test/
+docs/
+skills/
+.claude-plugin/
+README.md

@@ -131,6 +131,14 @@ hubsweep --rules ./my-packs --pack my-campaign-2026-12
 
 Pull requests with packs for new public campaigns are welcome: include the source, credits, and a test.
 
+### Repos that hold indicators on purpose
+
+A checkout that stores indicators as data, such as this repo, a security tool's rules or a write-up about an
+attack, would flag itself. Add a `.hubsweep-ignore` at its root, tracked in git, listing the paths that hold them
+(`rules/`, `docs/*.md`, `examples/**/fixture.txt`; `#` starts a comment). It only skips file-path and file-content
+matches under those paths: install hooks, commit subjects and editor tasks are still checked. Every skip is listed
+under "To look at" with the file's last change, because an attacker could add one too.
+
 Some checks need no pack and always run: deleted runs, workflow edits that dump `toJSON(secrets)` or `toJSON(vars)`,
 add `id-token: write`, call a raw IP address or use `pull_request_target`, person-posted `success` statuses, and
 VS Code tasks that run on folder open.
@@ -153,7 +161,7 @@ missing, agrees the scope with you, runs the sweep and explains the result. hubs
 
 **Claude chat (claude.ai)**
 
-Download `hubsweep-skill.zip` from the [latest release](https://github.com/pacphi/hubsweep/releases/latest), then
+Download [`hubsweep-skill.zip`](https://github.com/pacphi/hubsweep/releases/latest/download/hubsweep-skill.zip) (always the newest release), then
 upload it under **Settings → Capabilities → Skills**. Chat can't run commands on your computer, so there the skill
 uses the GitHub connector (if you've connected it) for the quick checks, gives you the commands for the full sweep,
 and reads the report with you when you upload it.

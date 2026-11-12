@@ -150,6 +150,7 @@ export async function main(argv, { exec = execCmd, log = m => process.stderr.wri
     const co = await checkouts(ctx, packs, roots, since);
     result.findings.push(...pers.findings, ...co.findings);
     result.gaps.push(...pers.gaps, ...co.gaps);
+    for (const i of co.ignored) result.notes.push(`${i.repo}: its .hubsweep-ignore (${i.patterns.join(', ')}; last changed ${i.lastChange || 'not yet committed'}) skipped indicator matches in ${i.files.length} file${i.files.length === 1 ? '' : 's'}${i.files.length ? `: ${i.files.slice(0, 12).join(', ')}${i.files.length > 12 ? ', …' : ''}` : ''}. Make sure you or your team wrote that file.`);
     result.local = { coverage: pers.coverage, scanned: co.scanned, roots };
   }
 
