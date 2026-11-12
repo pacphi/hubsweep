@@ -70,9 +70,25 @@ export function findRepos(roots, maxDepth = 6) {
 
 const head4 = f => { try { const fd = openSync(f, 'r'); const b = Buffer.alloc(4); readSync(fd, b, 0, 4, 0); closeSync(fd); return b; } catch { return null; } };
 
-// checkouts(ctx, packs, roots, since) -> { findings, scanned, gaps }
+// .hubsweep-ignore: paths in a checkout that hold indicators on purpose (rule packs, tests, docs about an attack).
+// One pattern per line; `#` starts a comment; `dir/` covers everything under it; `*` matches within one path part,
+// `**` across parts. Only file-path and file-content matches are skipped: install hooks, commits and editor tasks
+// are always checked, and every skip is listed in the report.
+export function parseIgnore(text) {
+  const toRe = pat => {
+    let p = pat.replace(/^\/+/, '');
+    const dir = p.endsWith('/');
+    if (dir) p = p.slice(0, -1);
+    const body = p.split('**').map(part => part.split('*').map(x => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*')).join('.*');
+    return new RegExp(`^${body}${dir ? '/' : '(/|$)'}`);
+  };
+  const pats = String(text || '').split(/\r?\n/).map(l => l.replace(/#.*/, '').trim()).filter(Boolean);
+  return { patterns: pats, test: f => pats.some(x => toRe(x).test(f)) };
+}
+
+// checkouts(ctx, packs, roots, since) -> { findings, scanned, gaps, ignored }
 export async function checkouts(ctx, packs, roots, since) {
-  const findings = [], gaps = [];
+  const findings = [], gaps = [], ignored = [];
   const repos = findRepos(roots);
   const git = (repo, args) => ctx.exec('git', ['-c', 'safe.directory=*', '-C', repo, ...args]);
   const add = (repo, pack, key, evidence) => findings.push({ severity: pack.severity === 'check' || pack.checkOnly.includes(key) ? 'CHECK' : 'HIGH', pack: pack.id, kind: key, repo, evidence });
@@ -81,8 +97,11 @@ export async function checkouts(ctx, packs, roots, since) {
     const ls = await git(repo, ['ls-files', '-z']);
     if (ls.code !== 0) { gaps.push(`${repo}: ${ls.stderr.trim().split('\n')[0] || 'git ls-files failed'}`); continue; }
     const files = ls.stdout.split('\0').filter(f => f && !f.includes('node_modules/'));
+    const ign = files.includes('.hubsweep-ignore') ? parseIgnore(safeRead(ctx, join(repo, '.hubsweep-ignore'))) : null;
+    const skipped = new Set();
+    const skip = f => { if (ign && ign.test(f)) { skipped.add(f); return true; } return false; };
     for (const p of packs) for (const f of files) {
-      if (!firstMatch(p.host.repoFiles, f)) continue;
+      if (!firstMatch(p.host.repoFiles, f) || skip(f)) continue;
       if (/\.woff2$/.test(f)) {
         const b = head4(join(repo, f));
         if (b && isWoff2(b)) continue; // a real font
@@ -102,6 +121,7 @@ export async function checkouts(ctx, packs, roots, since) {
     if (strings.length) {
       const g = await git(repo, ['grep', '-lIE', strings.join('|'), '--', '.', ':!**/node_modules/**']);
       if (g.code === 0) for (const f of g.stdout.split('\n').filter(Boolean)) {
+        if (skip(f)) continue;
         const t = safeRead(ctx, join(repo, f)) || '';
         for (const p of packs) { const m = p.host.repoStrings.find(r => r.test(t)); if (m) add(repo, p, 'repoStrings', `${f} contains ${m.source}`); }
       } else if (g.code > 1) gaps.push(`${repo}: git grep failed`);
@@ -113,8 +133,12 @@ export async function checkouts(ctx, packs, roots, since) {
         for (const p of packs) if (firstMatch(p.host.repoCommits, subject)) add(repo, p, 'repoCommits', `commit ${sha.slice(0, 10)} "${subject}" (in a local branch or fetched ref)`);
       }
     }
+    if (ign) {
+      const last = await git(repo, ['log', '-1', '--format=%h %ad %an', '--date=short', '--', '.hubsweep-ignore']);
+      ignored.push({ repo, patterns: ign.patterns, files: [...skipped].sort(), lastChange: last.code === 0 ? last.stdout.trim() : '' });
+    }
   }
-  return { findings, scanned: repos.length, gaps };
+  return { findings, scanned: repos.length, gaps, ignored };
 }
 
 export const rootsExist = roots => roots.filter(r => existsSync(r));

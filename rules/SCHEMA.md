@@ -51,6 +51,9 @@ Some checks need no pack and always run: missing Actions run numbers (deleted ru
 `toJSON(secrets)` or `toJSON(vars)`, add `id-token: write`, call a raw IP or use `pull_request_target`, `success`
 statuses posted by a person instead of an app, and VS Code tasks that run when a folder opens.
 
+A checkout can opt paths out of `host.repoFiles` and `host.repoStrings` with a tracked `.hubsweep-ignore` (see the
+README). The other keys still apply there, and the report lists every skipped file.
+
 Before opening a PR with a new pack: add a planted example and a near miss for it to `test/checks.test.mjs`, and
 run `npm test`. Write regular expressions tightly (anchor with `^` and `$`); a pack that floods people with
 false alarms gets ignored.

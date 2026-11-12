@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { packs as load } from './helpers.mjs';
-import { persistence, checkouts, findRepos, defaultCtx } from '../src/local.mjs';
+import { persistence, checkouts, findRepos, defaultCtx, parseIgnore } from '../src/local.mjs';
 
 const packs = load();
 const put = (f, t) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, t); };
@@ -64,6 +64,37 @@ test('checkouts: each planted file is found; a real font and node_modules are no
   assert.ok(!/web\/public\/fonts/.test(ev), 'a real WOFF2 is left alone');
   assert.ok(!/node_modules/.test(ev));
   assert.deepEqual(r.gaps, []);
+});
+
+test('parseIgnore: folders, single-part and multi-part wildcards, comments', () => {
+  const i = parseIgnore('# notes\nrules/\ndocs/*.html\nexamples/**/fixture.txt\nREADME.md  # the write-up\n');
+  assert.deepEqual(i.patterns, ['rules/', 'docs/*.html', 'examples/**/fixture.txt', 'README.md']);
+  for (const f of ['rules/a.json', 'rules/x/y.json', 'docs/index.html', 'examples/a/b/fixture.txt', 'README.md']) assert.ok(i.test(f), f);
+  for (const f of ['src/rules/a.json', 'docs/sub/index.html', 'README.md.bak', 'rulesets/a.json', '.github/workflows/ci.yml']) assert.ok(!i.test(f), f);
+});
+
+test('checkouts: .hubsweep-ignore skips file matches it covers, lists them, and never hides hooks or commits', { skip: !hasGit && 'git not installed' }, async () => {
+  const root = tmp();
+  const repo = join(root, 'tool');
+  mkdirSync(repo, { recursive: true });
+  git(repo, 'init', '-q');
+  put(join(repo, '.hubsweep-ignore'), 'rules/\n');
+  put(join(repo, 'rules/pack.json'), '{ "repoStrings": ["WF_CALLBACK"] }');
+  put(join(repo, 'rules/.ci-a1b2c3.sh'), '#!/bin/sh\n');
+  put(join(repo, 'src/ci.yml'), 'WF_CALLBACK: x\n');
+  put(join(repo, 'package.json'), JSON.stringify({ scripts: { postinstall: 'sh rules/.ci-a1b2c3.sh' } }));
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'ci: restore');
+  const r = await checkouts(defaultCtx(), packs, [root], new Date('2020-01-01'));
+  const ev = r.findings.map(f => `${f.kind} ${f.evidence}`).join('\n');
+  assert.ok(!/rules\//.test(ev.replace(/postinstall: .*/, '')), 'nothing under rules/ is reported as a file match');
+  assert.match(ev, /repoStrings src\/ci\.yml contains/);
+  assert.match(ev, /npmScripts package\.json postinstall/);
+  assert.match(ev, /repoCommits commit .* "ci: restore"/);
+  assert.equal(r.ignored.length, 1);
+  assert.deepEqual(r.ignored[0].patterns, ['rules/']);
+  assert.deepEqual(r.ignored[0].files, ['rules/.ci-a1b2c3.sh', 'rules/pack.json']);
+  assert.match(r.ignored[0].lastChange, /\d{4}-\d{2}-\d{2}/);
 });
 
 test('findRepos skips node_modules and stops at the depth limit', () => {
