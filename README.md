@@ -44,7 +44,7 @@ npx --yes github:pacphi/hubsweep                # sweep every repo you can reach
 npx --yes github:pacphi/hubsweep --local ~/code # ...and this computer, plus the git checkouts under ~/code
 ```
 
-Or clone it and run `node bin/hubsweep.mjs`. If `gh` isn't installed, hubsweep offers to install it (Homebrew,
+Or clone it and run `node bin/hubsweep.mjs`. Try `--plan` first to see the checks and the steps without reading anything. If `gh` isn't installed, hubsweep offers to install it (Homebrew,
 winget, apt, dnf, zypper or pacman) and only does so if you say yes.
 
 It writes `hubsweep-report.md` and `hubsweep-report.json` and exits with:
@@ -65,8 +65,13 @@ It writes `hubsweep-report.md` and `hubsweep-report.json` and exits with:
 --since <when>       a date or a number of days (14d); default: the packs' earliest start, at most 90 days back
 --pack <id>          only these rule packs;   --rules <dir>  add your own packs;   --list-packs  show them
 --local <dir>        also check this computer and the git checkouts under <dir> (repeatable); --local-only skips GitHub
+--doctor             check the prerequisites and exit;   --plan  also show what the sweep would do, and exit
 --no-forks, --no-archived, --concurrency <n>, --out <dir>, --yes
 ```
+
+Every run starts the same way, before it reads a single repo: it checks what it needs (Node 22+, `gh` installed and
+signed in, the token's access, the API budget left this hour, `git` for `--local`, a writable report folder), then
+prints, step by step, what it is about to read and what it will not do. `--plan` stops there so you can look first.
 
 ## What a report looks like
 

@@ -39,7 +39,9 @@ test('a full run against a fake gh writes both reports and exits 10 on a high fi
   const out = realpathSync(mkdtempSync(join(tmpdir(), 'hubsweep-cli-')));
   const exec = routes({
     'gh --version': { code: 0, stdout: 'gh version 2', stderr: '' },
-    'api user --jq': { code: 0, stdout: 'octo-user\n', stderr: '' },
+    'api -i user': { code: 0, stdout: 'HTTP/2.0 200 OK\nX-Oauth-Scopes: repo, read:org\n\n{"login":"octo-user"}', stderr: '' },
+    'api rate_limit': ok({ resources: { core: { remaining: 4999, limit: 5000, reset: 1 } } }),
+    'git --version': { code: 0, stdout: 'git version 2', stderr: '' },
     'user/repos': ok([[{ full_name: 'octo-user/app', owner: { login: 'octo-user' }, html_url: 'h', default_branch: 'main', pushed_at: '2026-01-01T00:00:00Z', size: 1 }]]),
     'pulls?': ok([{ number: 5, title: 'docs: dependency audit notes', head: { ref: 'wfx-docs' }, user: { login: 'octo-user' }, state: 'open', html_url: 'u', created_at: '2026-11-10T13:00:00Z' }]),
     '/branches': ok([[]]),
@@ -60,7 +62,7 @@ test('a full run against a fake gh writes both reports and exits 10 on a high fi
 
 test('gh not signed in → exit 3 with the fix; bad args → exit 2; --list-packs → 0', async () => {
   const logs = [];
-  const exec = routes({ 'gh --version': { code: 0, stdout: 'gh', stderr: '' }, 'api user': { code: 1, stdout: '', stderr: 'not logged in' } });
+  const exec = routes({ 'gh --version': { code: 0, stdout: 'gh', stderr: '' }, 'api -i user': { code: 1, stdout: '', stderr: 'not logged in' } });
   assert.equal(await main([], { exec, log: m => logs.push(m), out: () => {}, now }), EXIT.SETUP);
   assert.match(logs.join('\n'), /gh auth login/);
   assert.equal(await main(['--nope'], { log: () => {}, out: () => {} }), EXIT.USAGE);
@@ -82,4 +84,22 @@ test('installCommand per platform, and ensureGh asks before installing', async (
   assert.deepEqual(ran, []);
   assert.equal(await ensureGh({ exec, platform: 'darwin', log: () => {}, ask: async () => 'y', run }), true);
   assert.deepEqual(ran, ['brew install gh']);
+});
+
+test('--plan checks prerequisites and explains each step without reading any repo', async () => {
+  const logs = [];
+  const seen = [];
+  const exec = async (cmd, args) => { const k = [cmd, ...args].join(' '); seen.push(k);
+    if (k === 'gh --version') return { code: 0, stdout: 'gh version 2', stderr: '' };
+    if (k === 'gh api -i user') return { code: 0, stdout: 'X-Oauth-Scopes: repo, read:org\n\n{"login":"octo-user"}', stderr: '' };
+    if (k === 'gh api rate_limit') return { code: 0, stdout: JSON.stringify({ resources: { core: { remaining: 10, limit: 5000, reset: 1 } } }), stderr: '' };
+    return { code: 0, stdout: 'x', stderr: '' }; };
+  const out = realpathSync(mkdtempSync(join(tmpdir(), 'hubsweep-plan-')));
+  assert.equal(await main(['--plan', '--owner', 'octo-org', '--out', out], { exec, log: m => logs.push(m), out: () => {}, platform: 'linux', now }), EXIT.CLEAN);
+  const text = logs.join('\n');
+  assert.match(text, /✓ Signed in to GitHub: as octo-user/);
+  assert.match(text, /! GitHub API budget: 10 of 5000/);
+  assert.match(text, /What hubsweep will do:\n  1\. List every repo owned by octo-org/);
+  assert.match(text, /makes no changes anywhere/);
+  assert.ok(!seen.some(k => k.includes('repos/') || k.includes('user/repos')), 'no repo was read');
 });

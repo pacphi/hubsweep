@@ -8,6 +8,7 @@ import { listRepos, sweepRepo, accountActivity, pool } from './sweep.mjs';
 import { persistence, checkouts, rootsExist, defaultCtx } from './local.mjs';
 import { renderMarkdown, renderJson, summarise } from './report.mjs';
 import { ensureGh } from './install.mjs';
+import { doctor, doctorFailed, renderDoctor, planText } from './doctor.mjs';
 
 export const VERSION = '0.1.0';
 export const EXIT = { CLEAN: 0, HIGH: 10, CHECK: 11, GAPS: 12, USAGE: 2, SETUP: 3 };
@@ -29,6 +30,8 @@ Usage: hubsweep [options]
   --no-forks          skip forks          --no-archived   skip archived repos
   --concurrency <n>   repos read at once (default 4)
   --out <dir>         where to write hubsweep-report.md and hubsweep-report.json (default: current folder)
+  --doctor            check the prerequisites (Node, gh, sign-in, token access, API budget, git) and exit
+  --plan              check the prerequisites, show what the sweep would do, and exit without reading any repo
   --yes               answer yes to the offer to install gh
   -h, --help          this text      --version   the version
 
@@ -36,7 +39,7 @@ Exit codes: 0 nothing found, 10 high findings, 11 things to check, 12 nothing fo
 2 bad arguments, 3 gh missing or not signed in.`;
 
 export function parseArgs(argv, now = new Date()) {
-  const o = { owners: [], repos: [], packs: [], rules: [], local: [], forks: true, archived: true, concurrency: 4, out: '.', yes: false, localOnly: false, listPacks: false, since: null, help: false, version: false };
+  const o = { owners: [], repos: [], packs: [], rules: [], local: [], forks: true, archived: true, concurrency: 4, out: '.', yes: false, localOnly: false, listPacks: false, doctor: false, plan: false, since: null, help: false, version: false };
   const need = (i, flag) => { if (i + 1 >= argv.length || argv[i + 1].startsWith('--')) throw new Error(`${flag} needs a value`); return argv[i + 1]; };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -54,6 +57,8 @@ export function parseArgs(argv, now = new Date()) {
       case '--concurrency': { const n = Number(need(i, a)); if (!Number.isInteger(n) || n < 1 || n > 16) throw new Error('--concurrency must be 1 to 16'); o.concurrency = n; i++; break; }
       case '--out': o.out = need(i, a); i++; break;
       case '--yes': o.yes = true; break;
+      case '--doctor': o.doctor = true; break;
+      case '--plan': o.plan = true; break;
       case '-h': case '--help': o.help = true; break;
       case '--version': o.version = true; break;
       default: throw new Error(`unknown option ${a}`);
@@ -96,11 +101,20 @@ export async function main(argv, { exec = execCmd, log = m => process.stderr.wri
   const since = windowStart(opt, packs, now);
   const result = { tool: `hubsweep ${VERSION}`, generated: now.toISOString(), platform, since: since.toISOString(), login: null, packs, findings: [], notes: [], gaps: [...errors.map(e => `rule pack: ${e}`)], repoCount: 0, deepCount: 0, repoNames: [], calls: 0, account: null, local: null };
 
+  // 1. Prerequisites: offer to install gh, then check everything else before reading anything
+  if (!opt.localOnly && !opt.doctor && !(await ensureGh({ exec, platform, log, yes: opt.yes, ...(ask ? { ask } : {}) }))) return EXIT.SETUP;
+  const checks = await doctor({ exec, platform, out: opt.out, local: opt.local, localOnly: opt.localOnly });
+  log(`Checking what hubsweep needs:\n${renderDoctor(checks)}\n`);
+  if (doctorFailed(checks)) { log('hubsweep: fix the items marked ✗ above, then run it again. Nothing was read.'); return EXIT.SETUP; }
+  if (opt.doctor) return EXIT.CLEAN;
+  const signedIn = checks.find(c => c.name === 'Signed in to GitHub');
+  const login = signedIn ? signedIn.detail.replace(/^as /, '') : null;
+  // 2. Say what will happen, in plain words, before doing it
+  log(`${planText({ login, owners: opt.owners, repos: opt.repos, since, packs, local: opt.local, localOnly: opt.localOnly, out: opt.out })}\n`);
+  if (opt.plan) return EXIT.CLEAN;
+
   if (!opt.localOnly) {
-    if (!(await ensureGh({ exec, platform, log, yes: opt.yes, ...(ask ? { ask } : {}) }))) return EXIT.SETUP;
-    const auth = await exec('gh', ['api', 'user', '--jq', '.login']);
-    if (auth.code !== 0) { log('gh is not signed in. Run `gh auth login`, then run hubsweep again.'); return EXIT.SETUP; }
-    result.login = auth.stdout.trim();
+    result.login = login;
     const gh = createGh({ exec, log });
     log(`hubsweep: reading repos for ${result.login} (window from ${since.toISOString().slice(0, 10)}; packs: ${packs.map(p => p.id).join(', ')})`);
     const { repos, gaps } = await listRepos(gh, { owners: opt.owners, repos: opt.repos, forks: opt.forks, archived: opt.archived });
