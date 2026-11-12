@@ -1,0 +1,14 @@
+{
+  "name": "hubsweep",
+  "version": "0.1.0",
+  "description": "Read-only sweep of every GitHub repo you can reach for signs of supply-chain campaigns, driven by rule packs.",
+  "type": "module",
+  "bin": { "hubsweep": "bin/hubsweep.mjs" },
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test \"test/*.test.mjs\"", "check": "node --check bin/hubsweep.mjs" },
+  "files": ["bin", "src", "rules", "README.md", "LICENSE"],
+  "license": "MIT",
+  "author": "Chris Phillipson, CP Ventures Group, LLC",
+  "repository": { "type": "git", "url": "git+https://github.com/pacphi/hubsweep.git" },
+  "keywords": ["github", "security", "supply-chain", "ioc", "github-actions", "incident-response"]
+}

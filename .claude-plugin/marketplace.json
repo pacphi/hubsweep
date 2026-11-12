@@ -1,0 +1,8 @@
+{
+  "name": "hubsweep",
+  "owner": { "name": "Chris Phillipson, CP Ventures Group, LLC" },
+  "metadata": { "description": "hubsweep: a read-only GitHub supply-chain campaign sweep." },
+  "plugins": [
+    { "name": "hubsweep", "source": "./", "description": "Read-only sweep of your GitHub repos for supply-chain campaign indicators, driven by rule packs.", "license": "MIT" }
+  ]
+}

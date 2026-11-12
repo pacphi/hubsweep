@@ -1,0 +1,50 @@
+{
+  "id": "ghostaction-2026-10",
+  "name": "GhostAction secret-scanning workflows and developer-machine stealer",
+  "source": "https://www.aikido.dev/blog/compromised-github-accounts-push-ci-secret-stealer-to-tens-of-thousands-of-repositories",
+  "credits": "Indicators as summarised by Oliver Smith, Aikido Security",
+  "active": {
+    "from": "2026-10-01T00:00:00Z",
+    "until": null
+  },
+  "severity": "high",
+  "advice": "A hit on a developer machine means its git credentials, SSH keys and package and cloud tokens are stolen: rotate them from a clean machine.",
+  "github": {
+    "workflowFiles": [
+      "^(security-audit|audit|ci-check)\\.ya?ml$"
+    ],
+    "files": [
+      "(^|/)public/fonts/fa-solid-400\\.woff2$"
+    ],
+    "content": [
+      "193\\.32\\.204\\.199",
+      "#ghc2"
+    ]
+  },
+  "host": {
+    "cron": [
+      "#ghc2",
+      "193\\.32\\.204\\.199"
+    ],
+    "launchAgents": [
+      "193\\.32\\.204\\.199"
+    ],
+    "userUnits": [
+      "193\\.32\\.204\\.199"
+    ],
+    "scheduledTasks": [
+      "#ghc2",
+      "193\\.32\\.204\\.199"
+    ],
+    "repoFiles": [
+      "(^|/)public/fonts/fa-solid-400\\.woff2$"
+    ],
+    "repoStrings": [
+      "193\\.32\\.204\\.199",
+      "#ghc2"
+    ]
+  },
+  "checkOnly": [
+    "workflowFiles"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "wfx-loot-2026-11",
+  "name": "wfx-loot GitHub Actions secret stealer",
+  "source": "https://www.aikido.dev/blog/compromised-github-accounts-push-ci-secret-stealer-to-tens-of-thousands-of-repositories",
+  "credits": "Oliver Smith, Aikido Security",
+  "active": {
+    "from": "2026-11-10T12:45:00Z",
+    "until": null
+  },
+  "severity": "high",
+  "advice": "If the payload ran, treat every secret and cloud role its workflows could reach as stolen. Check AWS for new IAM access keys and trust policies with \"AWS\": \"*\", and Azure for federated credentials named wfx-ci-*.",
+  "github": {
+    "prTitles": [
+      "^docs: dependency audit notes$"
+    ],
+    "branches": [
+      "^wfx-docs$",
+      "^chore/(?!(?:renovate|refactor|cleanups|lockfile|security|versions|upgrades|packages|workflow|bump-dep)$)[a-z0-9]{8}$",
+      "^ci-check-[0-9]{4}$"
+    ],
+    "commitSubjects": [
+      "^ci: refresh build cache$",
+      "^ci: restore$",
+      "^chore: add ci helper$",
+      "^ci: cleanup$",
+      "^chore: add dependency audit workflow$"
+    ],
+    "workflowFiles": [
+      "^build-audit-[a-z0-9]{6}\\.ya?ml$"
+    ],
+    "files": [
+      "(^|/)\\.ci-[a-z0-9]{6}\\.sh$"
+    ],
+    "content": [
+      "194\\.150\\.166\\.244",
+      "18\\.143\\.168\\.96",
+      "WF_CALLBACK",
+      "WF_CTOKEN",
+      "wfx-loot",
+      "WFX-BEGIN"
+    ],
+    "npmScripts": [
+      "\\.ci-[a-z0-9]{6}\\.sh"
+    ]
+  },
+  "host": {
+    "repoFiles": [
+      "(^|/)\\.ci-[a-z0-9]{6}\\.sh$",
+      "^\\.github/workflows/build-audit-[a-z0-9]{6}\\.ya?ml$"
+    ],
+    "repoStrings": [
+      "194\\.150\\.166\\.244",
+      "18\\.143\\.168\\.96",
+      "WF_CALLBACK",
+      "WF_CTOKEN",
+      "wfx-loot",
+      "WFX-BEGIN"
+    ],
+    "repoCommits": [
+      "^ci: refresh build cache$",
+      "^ci: restore$",
+      "^chore: add ci helper$",
+      "^ci: cleanup$",
+      "^chore: add dependency audit workflow$"
+    ],
+    "npmScripts": [
+      "\\.ci-[a-z0-9]{6}\\.sh"
+    ]
+  }
+}

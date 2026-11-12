@@ -1,0 +1,42 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v7
+        with: { node-version: '${{ matrix.node }}' }
+      - run: node --check bin/hubsweep.mjs
+      - run: node --test "test/*.test.mjs"
+      - run: node bin/hubsweep.mjs --list-packs
+      - name: Machine checks run on this OS (no GitHub)
+        shell: bash
+        run: |
+          set +e
+          node bin/hubsweep.mjs --local-only --local . --out "$RUNNER_TEMP/hs"
+          code=$?
+          cat "$RUNNER_TEMP/hs/hubsweep-report.md"
+          # 0 clean or 12 clean-with-gaps are fine; anything else fails the job
+          [ "$code" = 0 ] || [ "$code" = 12 ]
+  skill-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the claude.ai skill zip
+        run: |
+          mkdir -p dist
+          cp -r rules skills/hubsweep/
+          (cd skills && zip -qr ../dist/hubsweep-skill.zip hubsweep)
+          unzip -l dist/hubsweep-skill.zip
+      - uses: actions/upload-artifact@v5
+        with: { name: hubsweep-skill, path: dist/hubsweep-skill.zip }

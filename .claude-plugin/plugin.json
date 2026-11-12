@@ -1,0 +1,10 @@
+{
+  "name": "hubsweep",
+  "version": "0.1.0",
+  "description": "Read-only sweep of every GitHub repo you can reach (and optionally this machine) for signs of supply-chain campaigns such as wfx-loot and GhostAction, driven by rule packs.",
+  "author": { "name": "Chris Phillipson, CP Ventures Group, LLC" },
+  "homepage": "https://github.com/pacphi/hubsweep",
+  "repository": "https://github.com/pacphi/hubsweep",
+  "license": "MIT",
+  "keywords": ["github", "security", "supply-chain", "ioc", "github-actions", "incident-response"]
+}

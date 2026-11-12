@@ -1,0 +1,18 @@
+name: release
+on:
+  push: { tags: ['v*'] }
+permissions:
+  contents: write
+jobs:
+  skill-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the claude.ai skill zip
+        run: |
+          mkdir -p dist
+          cp -r rules skills/hubsweep/
+          (cd skills && zip -qr ../dist/hubsweep-skill.zip hubsweep)
+      - name: Attach it to the release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release create "$GITHUB_REF_NAME" dist/hubsweep-skill.zip --generate-notes --verify-tag || gh release upload "$GITHUB_REF_NAME" dist/hubsweep-skill.zip --clobber
